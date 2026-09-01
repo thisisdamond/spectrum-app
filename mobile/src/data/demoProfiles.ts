@@ -1,0 +1,47 @@
+import { colors } from "../theme/colors";
+import type { DemoProfile } from "../types";
+
+export const demoProfiles: DemoProfile[] = [
+  {
+    id: "maya",
+    name: "Maya",
+    age: 29,
+    pronouns: "she/her",
+    city: "Decatur, GA",
+    compatibility: 92,
+    bio: "Museum afternoons, cozy games, and plans with enough detail to actually feel relaxing.",
+    interests: ["Museums", "Cozy games", "Botanical gardens"],
+    communication: ["Direct", "Thoughtful replies", "Clear plans"],
+    dateEnvironments: ["Quiet café", "Museum", "Park walk"],
+    prompt: { question: "A clear green flag for me is…", answer: "Saying what you mean kindly—and being comfortable asking when something is unclear." },
+    accent: colors.rainbow.purple,
+  },
+  {
+    id: "jordan",
+    name: "Jordan",
+    age: 32,
+    pronouns: "they/them",
+    city: "Atlanta, GA",
+    compatibility: 87,
+    bio: "I make playlists for every season and will happily trade infodumps over tea.",
+    interests: ["Music", "Tea", "Urban hiking"],
+    communication: ["Direct", "Voice notes", "Time to process"],
+    dateEnvironments: ["Bookstore", "Tea shop", "Scenic trail"],
+    prompt: { question: "The best way to make plans with me…", answer: "Offer two options, a start time, and permission to reschedule if either of us is overloaded." },
+    accent: colors.rainbow.green,
+  },
+  {
+    id: "alex",
+    name: "Alex",
+    age: 27,
+    pronouns: "he/him",
+    city: "Marietta, GA",
+    compatibility: 81,
+    bio: "Animation nerd, patient cook, and enthusiastic finder of low-key weekend adventures.",
+    interests: ["Animation", "Cooking", "Photography"],
+    communication: ["Warm", "Specific questions", "Scheduled calls"],
+    dateEnvironments: ["Farmers market", "Home cooking", "Photo walk"],
+    prompt: { question: "Something I want a match to know…", answer: "Silence is comfortable for me. We do not have to fill every moment for it to be a good date." },
+    accent: colors.rainbow.orange,
+  },
+];

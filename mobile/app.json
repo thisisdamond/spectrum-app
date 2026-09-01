@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Spectrum",
+    "slug": "spectrum-dating",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.spectrum.dating"
+    },
+    "android": {
+      "package": "com.spectrum.dating",
+      "adaptiveIcon": { "backgroundColor": "#0A4DFF" }
+    },
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "apiUrl": "http://localhost:4000"
+    }
+  }
+}

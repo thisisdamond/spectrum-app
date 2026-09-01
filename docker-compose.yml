@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: spectrum
+      POSTGRES_USER: spectrum
+      POSTGRES_PASSWORD: spectrum_local_only
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spectrum -d spectrum"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - spectrum_postgres:/var/lib/postgresql/data
+
+volumes:
+  spectrum_postgres:

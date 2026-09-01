@@ -1,0 +1,354 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  DELETED
+}
+
+enum DatingGoal {
+  LONG_TERM
+  SHORT_TERM
+  FRIENDSHIP_FIRST
+  LIFE_PARTNER
+  EXPLORING
+}
+
+enum PreferenceLevel {
+  AVOID
+  LOW
+  MODERATE
+  HIGH
+  LOVE
+}
+
+enum InteractionTargetType {
+  PROFILE
+  PHOTO
+  PROMPT
+  VIDEO_PROMPT
+}
+
+enum MatchStatus {
+  ACTIVE
+  UNMATCHED
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum ReportCategory {
+  HARASSMENT
+  SPAM
+  FAKE_PROFILE
+  INAPPROPRIATE_CONTENT
+  HATE_OR_DISCRIMINATION
+  UNSAFE_BEHAVIOR
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id                  String        @id @default(uuid()) @db.Uuid
+  email               String        @unique
+  passwordHash        String?
+  emailVerifiedAt     DateTime?
+  status              AccountStatus @default(PENDING_VERIFICATION)
+  twoFactorEnabled    Boolean       @default(false)
+  twoFactorSecret     String?
+  refreshTokenHash    String?
+  lastActiveAt        DateTime?
+  deletedAt           DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  profile             Profile?
+  preferences         Preference?
+  accessibility       AccessibilitySettings?
+  notification        NotificationSettings?
+  subscription        Subscription?
+  photos              ProfilePhoto[]
+  prompts             PromptAnswer[]
+  videoPrompts        VideoPrompt[]
+  likesSent           Like[]        @relation("LikesSent")
+  likesReceived       Like[]        @relation("LikesReceived")
+  rejectsSent         Reject[]      @relation("RejectsSent")
+  rejectsReceived     Reject[]      @relation("RejectsReceived")
+  matchesA            Match[]       @relation("MatchUserA")
+  matchesB            Match[]       @relation("MatchUserB")
+  messages            Message[]
+  blocksCreated       Block[]       @relation("BlocksCreated")
+  blocksReceived      Block[]       @relation("BlocksReceived")
+  reportsCreated      Report[]      @relation("ReportsCreated")
+  reportsReceived     Report[]      @relation("ReportsReceived")
+  notificationTokens  NotificationToken[]
+  moderationNotes     AdminModerationNote[] @relation("ModeratedUser")
+
+  @@index([status, deletedAt])
+}
+
+model Profile {
+  id                         String     @id @default(uuid()) @db.Uuid
+  userId                     String     @unique @db.Uuid
+  displayName                String
+  birthDate                  DateTime
+  gender                     String
+  pronouns                   String?
+  city                       String?
+  region                     String?
+  countryCode                String?    @db.VarChar(2)
+  approximateLatitude        Decimal?   @db.Decimal(8, 5)
+  approximateLongitude       Decimal?   @db.Decimal(8, 5)
+  datingGoal                 DatingGoal
+  bio                        String?    @db.VarChar(1200)
+  occupation                 String?
+  education                  String?
+  religion                   String?
+  politicalPreference        String?
+  heightCm                   Int?
+  hasChildren                Boolean?
+  interests                  String[]
+  communicationStyle         String[]
+  sensoryPreferences         String[]
+  socialEnergy               Int        @default(50)
+  routinePreference          Int        @default(50)
+  directnessPreference       Int        @default(50)
+  preferredDatingPace        Int        @default(50)
+  physicalTouchComfort       String?
+  maskingComfort             String?
+  preferredDateEnvironments String[]
+  boundaries                 String[]
+  communicationCard          Json?
+  discoveryPaused            Boolean    @default(false)
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
+  user                       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([datingGoal, discoveryPaused])
+}
+
+model ProfilePhoto {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  storageKey String
+  altText    String?
+  position   Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, position])
+}
+
+model PromptAnswer {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  promptKey String
+  answer    String   @db.VarChar(1000)
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VideoPrompt {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  promptKey  String
+  storageKey String
+  caption    String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id                  String          @id @default(uuid()) @db.Uuid
+  userId              String          @unique @db.Uuid
+  minAge              Int             @default(18)
+  maxAge              Int             @default(100)
+  maxDistanceKm       Int             @default(80)
+  interestedInGenders String[]
+  datingGoals         DatingGoal[]
+  drinking            PreferenceLevel @default(MODERATE)
+  smoking             PreferenceLevel @default(AVOID)
+  cannabis            PreferenceLevel @default(MODERATE)
+  communicationStyles String[]
+  sensoryPreferences  String[]
+  socialEnergyTarget  Int             @default(50)
+  routineTarget       Int             @default(50)
+  dateEnvironments    String[]
+  desiredPace         Int             @default(50)
+  hardBoundaries      String[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccessibilitySettings {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  calmMode           Boolean  @default(true)
+  highContrast       Boolean  @default(false)
+  reducedMotion      Boolean  @default(true)
+  textScale          Float    @default(1)
+  quietNotifications Boolean  @default(true)
+  noAutoplayVideo    Boolean  @default(true)
+  breakModeUntil     DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationSettings {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @unique @db.Uuid
+  newMatches      Boolean  @default(true)
+  newMessages     Boolean  @default(true)
+  newLikes        Boolean  @default(true)
+  messagePreviews Boolean  @default(false)
+  batched         Boolean  @default(true)
+  pausedUntil     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id         String                @id @default(uuid()) @db.Uuid
+  senderId   String                @db.Uuid
+  receiverId String                @db.Uuid
+  targetType InteractionTargetType @default(PROFILE)
+  targetId   String?
+  comment    String?               @db.VarChar(500)
+  createdAt  DateTime              @default(now())
+  sender     User                  @relation("LikesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User                  @relation("LikesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, createdAt])
+}
+
+model Reject {
+  id         String   @id @default(uuid()) @db.Uuid
+  senderId   String   @db.Uuid
+  receiverId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  sender     User     @relation("RejectsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("RejectsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId, createdAt])
+}
+
+model Match {
+  id          String      @id @default(uuid()) @db.Uuid
+  userAId     String      @db.Uuid
+  userBId     String      @db.Uuid
+  status      MatchStatus @default(ACTIVE)
+  matchedAt   DateTime    @default(now())
+  unmatchedAt DateTime?
+  userA       User        @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User        @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages    Message[]
+
+  @@unique([userAId, userBId])
+  @@index([status, matchedAt])
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  matchId   String   @db.Uuid
+  senderId  String   @db.Uuid
+  body      String   @db.VarChar(5000)
+  readAt    DateTime?
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([matchId, createdAt])
+}
+
+model Block {
+  id        String   @id @default(uuid()) @db.Uuid
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  createdAt DateTime @default(now())
+  blocker   User     @relation("BlocksCreated", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+model Report {
+  id         String         @id @default(uuid()) @db.Uuid
+  reporterId String         @db.Uuid
+  reportedId String         @db.Uuid
+  category   ReportCategory
+  details    String?        @db.VarChar(3000)
+  status     ReportStatus   @default(OPEN)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  reporter   User           @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User           @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model Subscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @unique @db.Uuid
+  tier                   SubscriptionTier   @default(FREE)
+  status                 SubscriptionStatus @default(ACTIVE)
+  provider               String?
+  providerCustomerId     String?
+  providerSubscriptionId String?            @unique
+  currentPeriodEndsAt    DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminModerationNote {
+  id              String   @id @default(uuid()) @db.Uuid
+  moderatedUserId String   @db.Uuid
+  adminUserId     String   @db.Uuid
+  note            String   @db.VarChar(5000)
+  createdAt       DateTime @default(now())
+  moderatedUser   User     @relation("ModeratedUser", fields: [moderatedUserId], references: [id], onDelete: Cascade)
+
+  @@index([moderatedUserId, createdAt])
+}

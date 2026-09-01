@@ -1,0 +1,14 @@
+node_modules/
+.pnpm-store/
+.expo/
+dist/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+server/prisma/migrations/
+mobile/android/
+mobile/ios/
+work/

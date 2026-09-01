@@ -1,0 +1,17 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload a reviewed iOS build to TestFlight"
+  lane :beta do
+    # TODO: connect EAS-produced IPA and App Store Connect API credentials.
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+end
+
+platform :android do
+  desc "Upload a reviewed Android build to the internal track"
+  lane :beta do
+    # TODO: connect EAS-produced AAB and Google Play service credentials.
+    upload_to_play_store(track: "internal")
+  end
+end

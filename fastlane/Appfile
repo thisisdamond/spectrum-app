@@ -1,0 +1,4 @@
+app_identifier("com.spectrum.dating")
+package_name("com.spectrum.dating")
+
+# Set apple_id, team_id, and Google Play service credentials in CI secrets.

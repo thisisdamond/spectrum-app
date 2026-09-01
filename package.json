@@ -1,0 +1,20 @@
+{
+  "name": "spectrum-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @spectrum/server --filter @spectrum/mobile dev",
+    "dev:server": "pnpm --filter @spectrum/server dev",
+    "dev:mobile": "pnpm --filter @spectrum/mobile dev",
+    "build": "pnpm --filter @spectrum/server build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint",
+    "db:generate": "pnpm --filter @spectrum/server db:generate",
+    "db:migrate": "pnpm --filter @spectrum/server db:migrate",
+    "db:studio": "pnpm --filter @spectrum/server db:studio"
+  },
+  "devDependencies": { "typescript": "5.9.2" }
+}
