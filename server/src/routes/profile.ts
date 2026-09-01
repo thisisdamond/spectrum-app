@@ -5,6 +5,7 @@ import { prisma } from "../db.js";
 import { HttpError } from "../lib/httpError.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createPhotoReadUrl, createPhotoUpload, deletePhotoObject, readLocalPhoto, storeLocalPhoto, verifyPhotoObject } from "../services/media.js";
+import { evaluateDiscoveryEligibility } from "../services/discoveryFilters.js";
 import { getProfileSetupStatus } from "../services/profileSetup.js";
 
 export const profileRouter = Router();
@@ -148,6 +149,22 @@ profileRouter.post("/photos", async (req, res) => {
 profileRouter.get("/photos/:photoId/content", async (req, res) => {
   const photo = await prisma.profilePhoto.findUnique({ where: { id: req.params.photoId } });
   if (!photo) throw new HttpError(404, "Photo not found");
+  if (photo.userId !== req.userId) {
+    const [viewer, owner, blocked, rejected, match] = await Promise.all([
+      prisma.user.findUnique({ where: { id: req.userId }, select: { status: true, profile: true, preferences: true } }),
+      prisma.user.findUnique({ where: { id: photo.userId }, select: { status: true, deletedAt: true, profile: true, preferences: true } }),
+      prisma.block.findFirst({ where: { OR: [{ blockerId: req.userId, blockedId: photo.userId }, { blockerId: photo.userId, blockedId: req.userId }] } }),
+      prisma.reject.findFirst({ where: { OR: [{ senderId: req.userId, receiverId: photo.userId }, { senderId: photo.userId, receiverId: req.userId }] } }),
+      prisma.match.findFirst({ where: { status: "ACTIVE", OR: [{ userAId: req.userId, userBId: photo.userId }, { userAId: photo.userId, userBId: req.userId }] } }),
+    ]);
+    if (blocked || (!match && rejected)) throw new HttpError(404, "Photo not found");
+    if (!match) {
+      if (!viewer?.profile || !viewer.preferences || viewer.status !== "ACTIVE" || !owner?.profile || !owner.preferences || owner.status !== "ACTIVE" || owner.deletedAt || owner.profile.discoveryPaused) {
+        throw new HttpError(404, "Photo not found");
+      }
+      if (!evaluateDiscoveryEligibility(viewer.profile, viewer.preferences, owner.profile, owner.preferences).eligible) throw new HttpError(404, "Photo not found");
+    }
+  }
   const signedUrl = await createPhotoReadUrl(photo.storageKey);
   if (signedUrl) { res.redirect(signedUrl); return; }
   res.type(photo.mimeType).send(await readLocalPhoto(photo.storageKey));

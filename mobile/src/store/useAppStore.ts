@@ -1,7 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
-import { api, clearSession, getStoredUser, saveSession } from "../services/api";
-import type { AccessibilitySettings, Preferences, Profile, ProfilePhoto, PromptAnswer, Session, SetupStatus, SpectrumUser } from "../types";
+import { api, clearSession, getMediaHeaders, getStoredUser, saveSession } from "../services/api";
+import type {
+  AccessibilitySettings, DiscoveryAdvancedFilters, DiscoveryCandidate, DiscoveryStatus, IncomingLike,
+  MatchSummary, Preferences, Profile, ProfilePhoto, PromptAnswer, Session, SetupStatus, SpectrumUser,
+} from "../types";
 
 type ProfileBundle = SpectrumUser & {
   profile: Profile | null;
@@ -23,7 +26,19 @@ type AppState = {
   pendingEmail: string | null;
   pendingPreviewUrl: string | null;
   accessibility: AccessibilitySettings;
-  discoveryIndex: number;
+  discoveryCandidates: DiscoveryCandidate[];
+  discoveryStatus: DiscoveryStatus | null;
+  discoveryLoading: boolean;
+  discoveryError: string | null;
+  discoveryActionUserId: string | null;
+  discoveryFilters: DiscoveryAdvancedFilters;
+  incomingLikes: IncomingLike[];
+  likesLoading: boolean;
+  likesError: string | null;
+  matches: MatchSummary[];
+  matchesLoading: boolean;
+  matchesError: string | null;
+  lastMatch: { id: string; name: string } | null;
   initialize: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
@@ -37,18 +52,21 @@ type AppState = {
   savePreferences: (input: Preferences) => Promise<void>;
   addPrompt: (input: { promptKey: string; answer: string; position: number }) => Promise<void>;
   addPhoto: (photo: ProfilePhoto) => void;
-  nextProfile: () => void;
   updateAccessibility: (update: Partial<AccessibilitySettings>) => void;
+  startDiscoveryBreak: () => void;
+  setDiscoveryFilters: (filters: DiscoveryAdvancedFilters) => void;
+  loadDiscovery: () => Promise<void>;
+  likeCandidate: (userId: string, targetType?: "PROFILE" | "PHOTO" | "PROMPT", targetId?: string) => Promise<boolean>;
+  passCandidate: (userId: string) => Promise<void>;
+  backtrack: () => Promise<void>;
+  loadIncomingLikes: () => Promise<void>;
+  loadMatches: () => Promise<void>;
+  clearLastMatch: () => void;
 };
 
 const defaultAccessibility: AccessibilitySettings = {
-  calmMode: true,
-  highContrast: false,
-  reducedMotion: true,
-  textScale: 1,
-  quietNotifications: true,
-  noAutoplayVideo: true,
-  breakModeUntil: null,
+  calmMode: true, highContrast: false, reducedMotion: true, textScale: 1,
+  quietNotifications: true, noAutoplayVideo: true, breakModeUntil: null,
 };
 
 async function loadProfileBundle() {
@@ -57,6 +75,15 @@ async function loadProfileBundle() {
     api<{ status: SetupStatus }>("/profile/setup-status"),
   ]);
   return { user, status };
+}
+
+async function withMediaHeaders(candidate: DiscoveryCandidate) {
+  const headers = await getMediaHeaders();
+  return { ...candidate, photos: candidate.photos.map((photo) => ({ ...photo, headers })) };
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -71,31 +98,35 @@ export const useAppStore = create<AppState>((set, get) => ({
   pendingEmail: null,
   pendingPreviewUrl: null,
   accessibility: defaultAccessibility,
-  discoveryIndex: 0,
+  discoveryCandidates: [],
+  discoveryStatus: null,
+  discoveryLoading: false,
+  discoveryError: null,
+  discoveryActionUserId: null,
+  discoveryFilters: {},
+  incomingLikes: [],
+  likesLoading: false,
+  likesError: null,
+  matches: [],
+  matchesLoading: false,
+  matchesError: null,
+  lastMatch: null,
 
   initialize: async () => {
     const [storedUser, storedAccessibility] = await Promise.all([
-      getStoredUser(),
-      SecureStore.getItemAsync("spectrum.accessibility"),
+      getStoredUser(), SecureStore.getItemAsync("spectrum.accessibility"),
     ]);
     if (storedAccessibility) {
       try { set({ accessibility: { ...defaultAccessibility, ...JSON.parse(storedAccessibility) } }); } catch { /* keep safe defaults */ }
     }
     if (!storedUser) { set({ sessionStatus: "signedOut" }); return; }
     set({ user: storedUser });
-    try {
-      await get().refreshProfile();
-      set({ sessionStatus: "signedIn" });
-    } catch {
-      await clearSession();
-      set({ sessionStatus: "signedOut", user: null });
-    }
+    try { await get().refreshProfile(); set({ sessionStatus: "signedIn" }); }
+    catch { await clearSession(); set({ sessionStatus: "signedOut", user: null }); }
   },
 
   register: async (email, password) => {
-    const response = await api<{ user: SpectrumUser; previewUrl?: string }>("/auth/register", {
-      method: "POST", body: JSON.stringify({ email, password }),
-    });
+    const response = await api<{ user: SpectrumUser; previewUrl?: string }>("/auth/register", { method: "POST", body: JSON.stringify({ email, password }) });
     set({ pendingEmail: response.user.email, pendingPreviewUrl: response.previewUrl ?? null });
   },
 
@@ -115,13 +146,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   login: async (email, password) => {
-    const response = await api<Session | { requiresTwoFactor: true; challengeToken: string }>("/auth/login", {
-      method: "POST", body: JSON.stringify({ email, password }),
-    });
-    if ("requiresTwoFactor" in response) {
-      set({ challengeToken: response.challengeToken });
-      return "twoFactor";
-    }
+    const response = await api<Session | { requiresTwoFactor: true; challengeToken: string }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+    if ("requiresTwoFactor" in response) { set({ challengeToken: response.challengeToken }); return "twoFactor"; }
     await saveSession(response);
     set({ user: response.user, sessionStatus: "signedIn", challengeToken: null });
     await get().refreshProfile();
@@ -147,18 +173,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   signOut: async () => {
     await api<void>("/auth/logout", { method: "POST" }).catch(() => undefined);
     await clearSession();
-    set({ sessionStatus: "signedOut", user: null, profile: null, preferences: null, photos: [], prompts: [], setupStatus: null, discoveryIndex: 0 });
+    set({
+      sessionStatus: "signedOut", user: null, profile: null, preferences: null, photos: [], prompts: [], setupStatus: null,
+      discoveryCandidates: [], discoveryStatus: null, discoveryError: null, incomingLikes: [], likesError: null, matches: [], matchesError: null, lastMatch: null,
+    });
   },
 
   refreshProfile: async () => {
     const { user, status } = await loadProfileBundle();
     set({
       user: { id: user.id, email: user.email, status: user.status, twoFactorEnabled: user.twoFactorEnabled },
-      profile: user.profile,
-      preferences: user.preferences,
-      photos: user.photos,
-      prompts: user.prompts,
-      setupStatus: status,
+      profile: user.profile, preferences: user.preferences, photos: user.photos, prompts: user.prompts, setupStatus: status,
       ...(user.accessibility ? { accessibility: { ...defaultAccessibility, ...user.accessibility } } : {}),
     });
   },
@@ -182,7 +207,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo].sort((a, b) => a.position - b.position) })),
-  nextProfile: () => set((state) => ({ discoveryIndex: state.discoveryIndex + 1 })),
 
   updateAccessibility: (update) => {
     const previous = get().accessibility;
@@ -195,4 +219,104 @@ export const useAppStore = create<AppState>((set, get) => ({
         .catch(() => set({ accessibility: previous }));
     }
   },
+
+  startDiscoveryBreak: () => {
+    const breakModeUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    get().updateAccessibility({ breakModeUntil });
+    set({ discoveryCandidates: [], incomingLikes: [], discoveryError: null });
+  },
+
+  setDiscoveryFilters: (filters) => set({ discoveryFilters: filters }),
+
+  loadDiscovery: async () => {
+    set({ discoveryLoading: true, discoveryError: null });
+    const filters = get().discoveryFilters;
+    const query = [
+      filters.minCompatibility !== undefined ? `minCompatibility=${filters.minCompatibility}` : null,
+      filters.datingGoals?.length ? `datingGoals=${encodeURIComponent(filters.datingGoals.join(","))}` : null,
+      filters.communicationStyles?.length ? `communicationStyles=${encodeURIComponent(filters.communicationStyles.join(","))}` : null,
+      filters.dateEnvironments?.length ? `dateEnvironments=${encodeURIComponent(filters.dateEnvironments.join(","))}` : null,
+    ].filter(Boolean).join("&");
+    try {
+      const response = await api<{ candidates: DiscoveryCandidate[]; status: DiscoveryStatus }>(`/discovery${query ? `?${query}` : ""}`);
+      set({ discoveryCandidates: await Promise.all(response.candidates.map(withMediaHeaders)), discoveryStatus: response.status, discoveryLoading: false });
+    } catch (error) {
+      set({ discoveryCandidates: [], discoveryLoading: false, discoveryError: errorMessage(error) });
+    }
+  },
+
+  likeCandidate: async (userId, targetType = "PROFILE", targetId) => {
+    set({ discoveryActionUserId: userId, discoveryError: null });
+    try {
+      const response = await api<{ match: { id: string } | null; status: DiscoveryStatus }>("/discovery/like", {
+        method: "POST", body: JSON.stringify({ userId, targetType, ...(targetId ? { targetId } : {}) }),
+      });
+      const candidate = get().discoveryCandidates.find((item) => item.userId === userId)
+        ?? get().incomingLikes.find((item) => item.candidate.userId === userId)?.candidate;
+      set((state) => ({
+        discoveryCandidates: state.discoveryCandidates.filter((item) => item.userId !== userId),
+        incomingLikes: state.incomingLikes.filter((item) => item.candidate.userId !== userId),
+        discoveryStatus: response.status, discoveryActionUserId: null,
+        ...(response.match && candidate ? { lastMatch: { id: response.match.id, name: candidate.profile.displayName } } : {}),
+      }));
+      return Boolean(response.match);
+    } catch (error) {
+      set({ discoveryActionUserId: null, discoveryError: errorMessage(error) });
+      throw error;
+    }
+  },
+
+  passCandidate: async (userId) => {
+    set({ discoveryActionUserId: userId, discoveryError: null });
+    try {
+      await api("/discovery/reject", { method: "POST", body: JSON.stringify({ userId }) });
+      set((state) => ({
+        discoveryCandidates: state.discoveryCandidates.filter((item) => item.userId !== userId),
+        incomingLikes: state.incomingLikes.filter((item) => item.candidate.userId !== userId),
+        discoveryActionUserId: null,
+        discoveryStatus: state.discoveryStatus ? { ...state.discoveryStatus, backtrackAvailable: state.discoveryStatus.tier === "PREMIUM" } : null,
+      }));
+    } catch (error) {
+      set({ discoveryActionUserId: null, discoveryError: errorMessage(error) });
+      throw error;
+    }
+  },
+
+  backtrack: async () => {
+    set({ discoveryLoading: true, discoveryError: null });
+    try {
+      const { status } = await api<{ status: DiscoveryStatus }>("/discovery/backtrack", { method: "POST" });
+      set({ discoveryStatus: status });
+      await get().loadDiscovery();
+    } catch (error) {
+      set({ discoveryLoading: false, discoveryError: errorMessage(error) });
+    }
+  },
+
+  loadIncomingLikes: async () => {
+    set({ likesLoading: true, likesError: null, discoveryError: null });
+    try {
+      const response = await api<{ likes: IncomingLike[]; status: DiscoveryStatus }>("/discovery/likes");
+      const likes = await Promise.all(response.likes.map(async (like) => ({ ...like, candidate: await withMediaHeaders(like.candidate) })));
+      set({ incomingLikes: likes, discoveryStatus: response.status, likesLoading: false });
+    } catch (error) {
+      set({ incomingLikes: [], likesLoading: false, likesError: errorMessage(error) });
+    }
+  },
+
+  loadMatches: async () => {
+    set({ matchesLoading: true, matchesError: null });
+    try {
+      const response = await api<{ matches: MatchSummary[] }>("/matches");
+      const headers = await getMediaHeaders();
+      set({
+        matches: response.matches.map((match) => ({ ...match, otherUser: { ...match.otherUser, photo: match.otherUser.photo ? { ...match.otherUser.photo, headers } : null } })),
+        matchesLoading: false, matchesError: null,
+      });
+    } catch (error) {
+      set({ matches: [], matchesLoading: false, matchesError: errorMessage(error) });
+    }
+  },
+
+  clearLastMatch: () => set({ lastMatch: null }),
 }));

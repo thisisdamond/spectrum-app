@@ -5,6 +5,7 @@ import { AccessibilityIntroScreen } from "../screens/AccessibilityIntroScreen";
 import { ForgotPasswordScreen, LoginScreen, ResetPasswordScreen, SignupScreen, TwoFactorScreen, VerifyEmailScreen } from "../screens/AuthScreens";
 import { ChatScreen } from "../screens/ChatScreen";
 import { DiscoveryScreen } from "../screens/DiscoveryScreen";
+import { DiscoveryFiltersScreen } from "../screens/DiscoveryFiltersScreen";
 import { LikesScreen } from "../screens/LikesScreen";
 import { MatchesScreen } from "../screens/MatchesScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
@@ -26,7 +27,7 @@ export type AuthStackParams = {
   TwoFactor: undefined;
 };
 export type SetupStackParams = { Basics: undefined; Preferences: undefined; Communication: undefined; Sensory: undefined; Photos: undefined; Prompts: undefined };
-export type RootStackParams = { Main: undefined; Chat: { name: string }; ProfileSetup: undefined; TwoFactorSettings: undefined };
+export type RootStackParams = { Main: undefined; Chat: { name: string }; DiscoveryFilters: undefined; ProfileSetup: undefined; TwoFactorSettings: undefined };
 type TabParams = { Discover: undefined; Likes: undefined; Matches: undefined; Profile: undefined; Settings: undefined };
 
 const Auth = createNativeStackNavigator<AuthStackParams>();
@@ -52,7 +53,7 @@ function MainTabs() {
 }
 
 function MainNavigator() {
-  return <Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} options={{ headerShown: false }} /><Root.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.name })} /><Root.Screen name="ProfileSetup" component={SetupNavigator} options={{ headerShown: false }} /><Root.Screen name="TwoFactorSettings" component={TwoFactorSettingsScreen} options={{ title: "Account security" }} /></Root.Navigator>;
+  return <Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} options={{ headerShown: false }} /><Root.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.name })} /><Root.Screen name="DiscoveryFilters" component={DiscoveryFiltersScreen} options={{ title: "Discovery filters" }} /><Root.Screen name="ProfileSetup" component={SetupNavigator} options={{ headerShown: false }} /><Root.Screen name="TwoFactorSettings" component={TwoFactorSettingsScreen} options={{ title: "Account security" }} /></Root.Navigator>;
 }
 
 export function AppNavigator() {

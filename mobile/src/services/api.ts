@@ -30,6 +30,11 @@ export async function getStoredUser(): Promise<SpectrumUser | null> {
   try { return JSON.parse(value) as SpectrumUser; } catch { return null; }
 }
 
+export async function getMediaHeaders() {
+  const token = await SecureStore.getItemAsync(accessKey);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function refreshAccessToken() {
   const refreshToken = await SecureStore.getItemAsync(refreshKey);
   if (!refreshToken) return false;

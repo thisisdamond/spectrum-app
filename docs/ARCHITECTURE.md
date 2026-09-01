@@ -32,7 +32,13 @@ The compatibility engine is deterministic and returns a 0–100 score with a tra
 | Preferred date environments | 5 |
 | Pace and boundaries | 5 |
 
-Diagnosis and support-needs labels are not inputs. Blocking, rejection, prior likes, account status, pause state, distance, and age/gender preferences are hard filters before scoring.
+Diagnosis and support-needs labels are not inputs. Blocking, rejection, prior likes, existing matches, account status, setup completion, pause state, and reciprocal distance, dating-goal, age, and gender preferences are hard filters before scoring. Unknown coordinates remain unknown and do not produce a fabricated distance.
+
+Candidate responses expose a derived age and rounded distance, never a birth date or coordinates. Compatibility explanations name the strongest user-controlled dimensions and shared preferences. A snapshot is stored when a mutual match is created so later preference edits do not rewrite the reason shown for that match.
+
+Free-like usage is incremented with match creation inside a serializable database transaction. A per-user UTC date key makes the eight-like limit atomic and independently auditable. Duplicate likes are idempotent and do not consume quota. Premium access is accepted only when the subscription is active or trialing.
+
+Private photos use short-lived S3 read URLs in production. The local media endpoint rechecks ownership, active matches, blocks, passes, and reciprocal discovery eligibility before serving another person’s photo.
 
 ## Deployment target
 

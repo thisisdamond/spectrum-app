@@ -14,8 +14,9 @@
 
 ## Phase 3 — Discovery and matching
 
-- Production candidate filtering, likes, passes, daily limits, mutual matches
-- Explainable compatibility details, advanced filters, backtrack
+- ✅ Reciprocal candidate filtering, privacy-safe profiles, likes, passes, atomic daily limits, and mutual matches
+- ✅ Explainable compatibility details, Premium-gated advanced filters and backtrack
+- ✅ Live Discover, Likes, and Matches mobile experiences with calm empty/loading/error states
 
 ## Phase 4 — Communication and safety
 

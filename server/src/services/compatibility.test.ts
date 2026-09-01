@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scoreCompatibility, type CompatibilityProfile } from "./compatibility.js";
+import { explainCompatibility, scoreCompatibility, type CompatibilityProfile } from "./compatibility.js";
 
 const base: CompatibilityProfile = {
   datingGoals: ["LONG_TERM"],
@@ -32,5 +32,14 @@ describe("scoreCompatibility", () => {
     });
     expect(result.total).toBeGreaterThanOrEqual(0);
     expect(result.total).toBeLessThanOrEqual(100);
+  });
+
+  it("explains strong dimensions in user-friendly language", () => {
+    const score = scoreCompatibility(base, base);
+    const explanation = explainCompatibility(base, base, score);
+    expect(explanation.summary).toContain("Strong alignment");
+    expect(explanation.highlights.join(" ")).toContain("Museums");
+    expect(explanation.dimensions).toHaveLength(4);
+    expect(explanation.dimensions.every((dimension) => dimension.score <= dimension.maxScore)).toBe(true);
   });
 });

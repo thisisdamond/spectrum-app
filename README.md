@@ -2,7 +2,7 @@
 
 Spectrum is an accessibility-first dating app for autistic and neurodivergent adults. It is designed to reduce ambiguity, respect sensory needs, and help people communicate clearly without turning dating into a clinical experience.
 
-This repository contains the completed Phase 2 foundation:
+This repository contains the completed Phase 3 discovery and matching foundation:
 
 - `mobile/` — Expo + React Native app for iOS and Android
 - `server/` — Express + TypeScript API with Prisma/PostgreSQL
@@ -10,7 +10,7 @@ This repository contains the completed Phase 2 foundation:
 - `infra/` — local and AWS-oriented deployment notes
 - `fastlane/` — app-store automation placeholders
 
-Phase 2 adds verified accounts, password recovery, optional authenticator 2FA, Apple/Google identity validation, persistent mobile sessions, a guided six-step profile flow, private photo uploads, editable prompts/preferences, and account-synchronized accessibility settings.
+Phase 3 adds reciprocal discovery filters, privacy-safe candidate responses, explainable compatibility, daily free-like limits, passes, Premium backtrack and advanced-filter gates, incoming likes, mutual matches, and live mobile discovery/likes/matches screens. Phase 2 account, profile, media, and accessibility features remain in place.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ pnpm lint
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/ROADMAP.md](docs/ROADMAP.md) for implementation detail and the phased launch plan.
 
-## Phase 2 provider configuration
+## Provider configuration
 
 - Configure `EMAIL_WEBHOOK_URL` for production verification and reset messages. Development responses include a preview link when no webhook is configured.
 - Set `APPLE_CLIENT_ID` and `GOOGLE_CLIENT_IDS` on the API, plus the matching `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID` values for mobile builds.
@@ -63,3 +63,11 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/ROADMAP.md](docs/ROAD
 - Treat `JWT_*` and `TWO_FACTOR_ENCRYPTION_KEY` as independent secrets stored outside source control.
 
 The mobile OAuth redirect scheme is `spectrum://`. Apple and Google console settings must match the bundle identifiers and redirect URLs for each build environment.
+
+## Phase 3 discovery behavior
+
+- Age, gender, dating-goal, and known-distance preferences must fit in both directions before scoring.
+- Blocks, passes, prior likes, existing matches, paused profiles, inactive accounts, and incomplete profiles are excluded.
+- Free accounts receive eight likes per UTC day. The API enforces the quota transactionally; mobile values are display-only.
+- Compatibility explanations use only user-controlled lifestyle, communication, comfort, interest, pace, and distance inputs. Diagnosis and support-needs labels are never inputs.
+- The API returns age and rounded distance, not birth dates or coordinates. Private development photos require an authorized relationship on every read.
