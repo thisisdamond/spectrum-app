@@ -8,7 +8,6 @@ coverage/
 .env
 .env.*
 !.env.example
-server/prisma/migrations/
 mobile/android/
 mobile/ios/
 work/

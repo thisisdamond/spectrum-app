@@ -7,9 +7,10 @@
 
 ## Phase 2 — Accounts and profile setup
 
-- Email verification, password reset, optional 2FA, Apple/Google sign-in
-- Guided profile, preferences, photos, prompts, communication card
-- Accessibility settings synchronized to the API
+- ✅ Email verification, password reset, optional authenticator 2FA, Apple/Google identity-token validation
+- ✅ Guided profile, preferences, private photos, prompts, and communication card
+- ✅ Accessibility settings synchronized to the API and local secure storage
+- ✅ Resumable setup status, initial PostgreSQL migration, and CI migration validation
 
 ## Phase 3 — Discovery and matching
 

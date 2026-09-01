@@ -2,6 +2,9 @@ packages:
   - mobile
   - server
 
+overrides:
+  react-dom: 19.2.3
+
 allowBuilds:
   '@prisma/engines': true
   argon2: true
@@ -14,3 +17,19 @@ onlyBuiltDependencies:
   - argon2
   - esbuild
   - prisma
+
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.21'
+  - '@expo/fingerprint@0.20.12'
+  - '@expo/router-server@57.0.9'
+  - babel-preset-expo@57.0.10
+  - expo-asset@57.0.16
+  - expo-constants@57.0.17
+  - expo-font@57.0.3
+  - expo-modules-core@57.0.15
+  - expo-modules-jsi@57.0.7
+  - expo@57.0.19
+  - expo-auth-session@57.0.11
+  - expo-image-picker@57.0.15
+  - expo-linking@57.0.9
+  - expo-secure-store@57.0.3

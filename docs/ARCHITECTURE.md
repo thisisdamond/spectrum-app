@@ -7,7 +7,7 @@ Spectrum is a pnpm monorepo with two deployable applications:
 - Expo/React Native mobile client (`mobile`)
 - Express API and PostgreSQL data layer (`server`)
 
-PostgreSQL is the system of record. Prisma owns schema and migrations. Media will use private S3 objects with short-lived signed URLs; exact storage integration is intentionally deferred until Phase 2.
+PostgreSQL is the system of record. Prisma owns schema and tracked migrations. Profile media uses private S3 objects with short-lived signed upload/read URLs in production and an authenticated local-file adapter in development.
 
 ## Trust boundaries
 
@@ -40,7 +40,7 @@ The production target is AWS: RDS PostgreSQL, private S3 media, ECS/Fargate API,
 
 ## Deferred production requirements
 
-- Email verification, reset, social OAuth, and TOTP
+- Production email-provider webhook credentials and Apple/Google console credentials
 - S3 media moderation and abuse scanning
 - Socket-backed real-time messaging
 - Expo push notification worker

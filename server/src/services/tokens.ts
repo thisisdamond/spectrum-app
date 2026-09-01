@@ -23,6 +23,15 @@ export async function createRefreshToken(userId: string) {
     .sign(refreshSecret);
 }
 
+export async function createTwoFactorChallengeToken(userId: string) {
+  return new SignJWT({ type: "two_factor" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(userId)
+    .setIssuedAt()
+    .setExpirationTime(env.TWO_FACTOR_CHALLENGE_TTL)
+    .sign(accessSecret);
+}
+
 export async function verifyAccessToken(token: string) {
   const { payload } = await jwtVerify(token, accessSecret);
   if (payload.type !== "access" || !payload.sub) throw new Error("Invalid access token");
@@ -32,5 +41,11 @@ export async function verifyAccessToken(token: string) {
 export async function verifyRefreshToken(token: string) {
   const { payload } = await jwtVerify(token, refreshSecret);
   if (payload.type !== "refresh" || !payload.sub) throw new Error("Invalid refresh token");
+  return payload.sub;
+}
+
+export async function verifyTwoFactorChallengeToken(token: string) {
+  const { payload } = await jwtVerify(token, accessSecret);
+  if (payload.type !== "two_factor" || !payload.sub) throw new Error("Invalid two-factor challenge");
   return payload.sub;
 }

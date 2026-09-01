@@ -4,7 +4,6 @@ import { Screen } from "../components/Screen";
 
 const makeScreen = (title: string, description: string) => function PlaceholderScreen() { return <Screen><AccessibleText variant="title" weight="800">{title}</AccessibleText><Card><AccessibleText>{description}</AccessibleText></Card></Screen>; };
 
-export const TwoFactorScreen = makeScreen("Two-factor authentication", "Optional authenticator-app setup arrives in Phase 2.");
 export const ProfileSetupScreen = makeScreen("Build your profile", "Add only what you are comfortable sharing.");
 export const PreferencesSetupScreen = makeScreen("Who you’d like to meet", "Preferences are adjustable and private.");
 export const CommunicationStyleScreen = makeScreen("Communication style", "Choose directness, response pace, and planning preferences.");

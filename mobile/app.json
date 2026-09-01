@@ -2,19 +2,35 @@
   "expo": {
     "name": "Spectrum",
     "slug": "spectrum-dating",
+    "scheme": "spectrum",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.spectrum.dating"
+      "bundleIdentifier": "com.spectrum.dating",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.spectrum.dating",
-      "adaptiveIcon": { "backgroundColor": "#0A4DFF" }
+      "adaptiveIcon": {
+        "backgroundColor": "#0A4DFF"
+      }
     },
-    "plugins": ["expo-secure-store"],
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Spectrum uses photos you choose to build your dating profile.",
+          "cameraPermission": "Spectrum uses the camera only when you choose to take a profile photo.",
+          "microphonePermission": false
+        }
+      ]
+    ],
     "extra": {
       "apiUrl": "http://localhost:4000"
     }
