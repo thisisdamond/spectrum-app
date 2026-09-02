@@ -28,6 +28,7 @@ jobs:
       JWT_ACCESS_SECRET: ci-only-access-secret-at-least-32-characters
       JWT_REFRESH_SECRET: ci-only-refresh-secret-at-least-32-characters
       TWO_FACTOR_ENCRYPTION_KEY: ci-only-two-factor-key-at-least-32-characters
+      SAFETY_DATA_ENCRYPTION_KEY: ci-only-safety-data-key-at-least-32-characters
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

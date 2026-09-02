@@ -8,6 +8,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { explainCompatibility, scoreCompatibility, type CompatibilityProfile } from "../services/compatibility.js";
 import { evaluateDiscoveryEligibility, utcUsageWindow, viceCompatibility } from "../services/discoveryFilters.js";
 import { publicPhoto, publicProfile } from "../services/publicProfile.js";
+import { queuePushNotification } from "../services/notifications.js";
 
 export const discoveryRouter = Router();
 discoveryRouter.use(requireAuth);
@@ -284,10 +285,23 @@ discoveryRouter.post("/like", async (req, res) => {
     const match = await tx.match.upsert({
       where: { userAId_userBId: { userAId, userBId } },
       create: { userAId, userBId, compatibilityScore: scored.compatibility.total, compatibilitySnapshot: snapshot },
-      update: { status: "ACTIVE", unmatchedAt: null, matchedAt: new Date(), compatibilityScore: scored.compatibility.total, compatibilitySnapshot: snapshot },
+      update: { status: "ACTIVE", unmatchedAt: null, matchedAt: new Date(), lastActivityAt: new Date(), compatibilityScore: scored.compatibility.total, compatibilitySnapshot: snapshot },
     });
     return { like, match: { id: match.id, matchedAt: match.matchedAt } };
   });
+  if (result.match) {
+    await queuePushNotification({
+      userId: candidate.id, kind: "NEW_MATCH", title: "You have a new match",
+      defaultBody: `You and ${viewer.profile.displayName} liked each other.`,
+      data: { type: "match", matchId: result.match.id },
+    });
+  } else {
+    await queuePushNotification({
+      userId: candidate.id, kind: "NEW_LIKE", title: "Someone likes you",
+      defaultBody: "You have a new like on Spectrum.",
+      data: { type: "like" },
+    });
+  }
   res.status(201).json({ ...result, status: await discoveryStatus(viewer.id, premium) });
 });
 

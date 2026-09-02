@@ -25,7 +25,7 @@ export function MatchesScreen() {
     {matches.map((match) => {
       const profile = match.otherUser.profile;
       const preview = match.lastMessage?.body ?? "You matched! Say hello when you’re ready.";
-      return <Pressable key={match.id} accessibilityRole="button" accessibilityLabel={`Open chat with ${profile.displayName}`} onPress={() => navigation.navigate("Chat", { name: profile.displayName })}>
+      return <Pressable key={match.id} accessibilityRole="button" accessibilityLabel={`Open chat with ${profile.displayName}`} onPress={() => navigation.navigate("Chat", { matchId: match.id, userId: match.otherUser.userId, name: profile.displayName })}>
         <Card style={{ flexDirection: "row", alignItems: "center" }}>
           {match.otherUser.photo ? <Image accessibilityLabel={match.otherUser.photo.altText ?? `Profile photo for ${profile.displayName}`} source={{ uri: match.otherUser.photo.url, headers: match.otherUser.photo.headers }} style={{ width: 64, height: 64, borderRadius: radius.pill }} /> : (
             <View style={{ width: 64, height: 64, borderRadius: radius.pill, backgroundColor: colors.softBlue, alignItems: "center", justifyContent: "center" }}><AccessibleText color={colors.primary} weight="800">{profile.displayName[0]}</AccessibleText></View>
@@ -33,6 +33,7 @@ export function MatchesScreen() {
           <View style={{ flex: 1, gap: spacing.xs }}>
             <AccessibleText weight="800">{profile.displayName}</AccessibleText>
             <AccessibleText color={colors.muted} numberOfLines={2}>{preview}</AccessibleText>
+            {match.unreadCount > 0 ? <AccessibleText variant="caption" color={colors.primary} weight="800">{match.unreadCount} unread</AccessibleText> : null}
             {match.compatibilityScore !== null ? <AccessibleText variant="caption" color={colors.primaryDark}>{Math.round(match.compatibilityScore)}% compatibility at match time</AccessibleText> : null}
           </View>
         </Card>

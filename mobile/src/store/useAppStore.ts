@@ -38,7 +38,7 @@ type AppState = {
   matches: MatchSummary[];
   matchesLoading: boolean;
   matchesError: string | null;
-  lastMatch: { id: string; name: string } | null;
+  lastMatch: { id: string; userId: string; name: string } | null;
   initialize: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
@@ -257,7 +257,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         discoveryCandidates: state.discoveryCandidates.filter((item) => item.userId !== userId),
         incomingLikes: state.incomingLikes.filter((item) => item.candidate.userId !== userId),
         discoveryStatus: response.status, discoveryActionUserId: null,
-        ...(response.match && candidate ? { lastMatch: { id: response.match.id, name: candidate.profile.displayName } } : {}),
+        ...(response.match && candidate ? { lastMatch: { id: response.match.id, userId: candidate.userId, name: candidate.profile.displayName } } : {}),
       }));
       return Boolean(response.match);
     } catch (error) {

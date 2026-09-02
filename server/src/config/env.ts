@@ -13,6 +13,7 @@ const schema = z.object({
   REFRESH_TOKEN_TTL: z.string().default("30d"),
   TWO_FACTOR_CHALLENGE_TTL: z.string().default("5m"),
   TWO_FACTOR_ENCRYPTION_KEY: z.string().min(32),
+  SAFETY_DATA_ENCRYPTION_KEY: z.string().min(32),
   CORS_ORIGIN: z.string().default("http://localhost:8081"),
   APP_BASE_URL: z.url().default("http://localhost:8081"),
   API_PUBLIC_URL: z.url().default("http://localhost:4000"),
@@ -23,6 +24,9 @@ const schema = z.object({
   MEDIA_BUCKET: z.string().optional(),
   MEDIA_LOCAL_DIR: z.string().default("/tmp/spectrum-uploads"),
   AWS_REGION: z.string().default("us-east-1"),
+  EXPO_PUSH_URL: z.url().default("https://exp.host/--/api/v2/push/send"),
+  SAFETY_WEBHOOK_URL: z.url().optional(),
+  SAFETY_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);

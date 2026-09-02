@@ -82,12 +82,40 @@ enum AuthTokenType {
   PASSWORD_RESET
 }
 
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum DateCheckInStatus {
+  SCHEDULED
+  CHECKED_IN
+  MISSED
+  CANCELED
+}
+
+enum PushNotificationKind {
+  NEW_MATCH
+  NEW_MESSAGE
+  NEW_LIKE
+  SAFETY_CHECK_IN
+}
+
+enum PushDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
 model User {
   id                  String        @id @default(uuid()) @db.Uuid
   email               String        @unique
   passwordHash        String?
   emailVerifiedAt     DateTime?
   status              AccountStatus @default(PENDING_VERIFICATION)
+  role                UserRole      @default(USER)
   twoFactorEnabled    Boolean       @default(false)
   twoFactorSecret     String?
   refreshTokenHash    String?
@@ -119,6 +147,10 @@ model User {
   authTokens          AuthToken[]
   oauthAccounts       OAuthAccount[]
   discoveryUsage      DiscoveryUsage[]
+  typingIndicators    TypingIndicator[]
+  safetyPlan          SafetyPlan?
+  dateCheckIns        DateCheckIn[]
+  pushNotifications   PushNotification[]
 
   @@index([status, deletedAt])
 }
@@ -328,11 +360,15 @@ model Match {
   status      MatchStatus @default(ACTIVE)
   matchedAt   DateTime    @default(now())
   unmatchedAt DateTime?
+  lastActivityAt DateTime @default(now())
   compatibilityScore    Float?
   compatibilitySnapshot Json?
   userA       User        @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
   userB       User        @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
   messages    Message[]
+  typingIndicators TypingIndicator[]
+  dateCheckIns DateCheckIn[]
+  reports Report[]
 
   @@unique([userAId, userBId])
   @@index([status, matchedAt])
@@ -342,6 +378,7 @@ model Message {
   id        String   @id @default(uuid()) @db.Uuid
   matchId   String   @db.Uuid
   senderId  String   @db.Uuid
+  clientId  String?  @db.Uuid
   body      String   @db.VarChar(5000)
   readAt    DateTime?
   deletedAt DateTime?
@@ -350,6 +387,20 @@ model Message {
   sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([matchId, createdAt])
+  @@unique([senderId, clientId])
+}
+
+model TypingIndicator {
+  id        String   @id @default(uuid()) @db.Uuid
+  matchId   String   @db.Uuid
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, userId])
+  @@index([expiresAt])
 }
 
 model Block {
@@ -368,15 +419,54 @@ model Report {
   id         String         @id @default(uuid()) @db.Uuid
   reporterId String         @db.Uuid
   reportedId String         @db.Uuid
+  matchId    String?        @db.Uuid
   category   ReportCategory
   details    String?        @db.VarChar(3000)
   status     ReportStatus   @default(OPEN)
+  evidenceMessageIds String[]        @default([])
+  resolutionNote String?    @db.VarChar(3000)
+  resolvedAt DateTime?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   reporter   User           @relation("ReportsCreated", fields: [reporterId], references: [id], onDelete: Cascade)
   reported   User           @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+  match      Match?         @relation(fields: [matchId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+model SafetyPlan {
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @unique @db.Uuid
+  encryptedContactName    String?  @db.Text
+  encryptedContactDetails String?  @db.Text
+  encryptedNotes          String?  @db.Text
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DateCheckIn {
+  id                      String            @id @default(uuid()) @db.Uuid
+  userId                  String            @db.Uuid
+  matchId                 String?           @db.Uuid
+  label                   String            @db.VarChar(120)
+  scheduledFor            DateTime
+  status                  DateCheckInStatus @default(SCHEDULED)
+  encryptedVenue          String?           @db.Text
+  encryptedNote           String?           @db.Text
+  trustedContactRequested Boolean           @default(false)
+  checkedInAt             DateTime?
+  canceledAt              DateTime?
+  missedAt                DateTime?
+  notificationSentAt      DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match                   Match?            @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledFor])
+  @@index([userId, scheduledFor])
 }
 
 model Subscription {
@@ -401,6 +491,26 @@ model NotificationToken {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushNotification {
+  id          String                 @id @default(uuid()) @db.Uuid
+  userId      String                 @db.Uuid
+  kind        PushNotificationKind
+  title       String                 @db.VarChar(120)
+  body        String                 @db.VarChar(500)
+  data        Json?
+  quiet       Boolean                @default(true)
+  status      PushDeliveryStatus     @default(PENDING)
+  attempts    Int                    @default(0)
+  lastError   String?                @db.VarChar(1000)
+  sentAt      DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model AdminModerationNote {

@@ -40,6 +40,20 @@ Free-like usage is incremented with match creation inside a serializable databas
 
 Private photos use short-lived S3 read URLs in production. The local media endpoint rechecks ownership, active matches, blocks, passes, and reciprocal discovery eligibility before serving another person’s photo.
 
+## Communication
+
+Messages are persistent PostgreSQL records and require an active match on every read, send, typing, and read-state request. Mobile creates a UUID for every outgoing message; a unique sender/client-ID pair makes retries idempotent without allowing that identifier to cross conversations. Match activity timestamps keep active conversations ordered by their latest message.
+
+The Phase 4 live transport is authenticated long polling with opaque time-and-ID cursors. Tokens stay in authorization headers rather than query strings. Typing indicators are short-lived database heartbeats, and read receipts expose only a read-through timestamp. This transport is intentionally replaceable with a managed WebSocket or event-stream layer when traffic requires it.
+
+Push delivery uses an auditable database outbox record and Expo Push. Server-side category, pause, preview, and quiet-mode rules are authoritative. Mobile asks for notification permission only through an explicit settings action. Android has separate quiet and audible channels so a background notification cannot bypass the person’s sound preference.
+
+## Safety and moderation
+
+Blocking is directional and immediately closes every active match between the two accounts. Closed matches cannot be messaged, and unblocking never recreates them. A report may reference one exact match and up to 20 validated message IDs. Moderator endpoints require an active `MODERATOR` or `ADMIN` role and expose the report queue, selected evidence, resolution state, and internal notes.
+
+Trusted-contact details, personal plan notes, venues, and check-in notes use versioned AES-256-GCM encryption with a dedicated key. Date check-ins become due at their scheduled time, notify the account, and become missed after a 15-minute grace period. Trusted-contact details leave Spectrum only when the person opted into escalation for that check-in and a reviewed provider webhook is configured. The feature explicitly does not replace emergency services.
+
 ## Deployment target
 
 The production target is AWS: RDS PostgreSQL, private S3 media, ECS/Fargate API, CloudFront where useful, Secrets Manager, WAF, GuardDuty, and centralized audit logs. The architecture remains portable to Render or Fly.io during early testing.
@@ -48,9 +62,10 @@ The production target is AWS: RDS PostgreSQL, private S3 media, ECS/Fargate API,
 
 - Production email-provider webhook credentials and Apple/Google console credentials
 - S3 media moderation and abuse scanning
-- Socket-backed real-time messaging
-- Expo push notification worker
+- Managed socket/event transport and shared pub/sub for high-volume messaging
+- Durable push retries, Expo receipt processing, and invalid-token cleanup
 - RevenueCat webhook verification
-- Admin moderation console
+- Admin moderation console above the role-protected Phase 4 moderation API
+- Reviewed trusted-contact delivery provider, retry policy, and incident runbook
 - Data export/deletion workflow
 - Rate limits, bot protection, audit logging, and production observability

@@ -20,8 +20,8 @@
 
 ## Phase 4 — Communication and safety
 
-- Real-time messaging, typing/read-state controls, quiet push notifications
-- Blocks, reports, unmatch, moderation queues, safety plan and date check-ins
+- ✅ Persistent live messaging, typing/read-state controls, idempotent retries, and quiet push notifications
+- ✅ Blocks, reports with message evidence, unmatch, role-protected moderation queues, encrypted safety plans, and date check-ins
 
 ## Phase 5 — Subscriptions
 

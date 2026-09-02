@@ -30,8 +30,29 @@ settingsRouter.put("/accessibility", async (req, res) => {
 });
 
 settingsRouter.get("/notifications", async (req, res) => {
-  const settings = await prisma.notificationSettings.findUnique({ where: { userId: req.userId } });
+  const settings = await prisma.notificationSettings.upsert({
+    where: { userId: req.userId }, create: { userId: req.userId! }, update: {},
+  });
   res.json({ settings });
+});
+
+settingsRouter.post("/notification-tokens", async (req, res) => {
+  const input = z.object({
+    token: z.string().trim().regex(/^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9_-]+\]$/, "Invalid Expo push token"),
+    platform: z.enum(["ios", "android"]),
+  }).parse(req.body);
+  const token = await prisma.notificationToken.upsert({
+    where: { token: input.token },
+    create: { userId: req.userId!, ...input },
+    update: { userId: req.userId!, platform: input.platform },
+  });
+  res.status(201).json({ token: { id: token.id, platform: token.platform } });
+});
+
+settingsRouter.delete("/notification-tokens", async (req, res) => {
+  const { token } = z.object({ token: z.string().trim().min(1) }).parse(req.body);
+  await prisma.notificationToken.deleteMany({ where: { userId: req.userId, token } });
+  res.status(204).send();
 });
 
 settingsRouter.put("/notifications", async (req, res) => {

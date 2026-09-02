@@ -47,7 +47,7 @@ export function DiscoveryScreen() {
       <AccessibleText>You both liked each other. Start a conversation whenever you feel ready.</AccessibleText>
       <View style={{ flexDirection: "row", gap: spacing.sm }}>
         <Button label="Not now" variant="secondary" onPress={clearLastMatch} style={{ flex: 1 }} />
-        <Button label="Say hello" onPress={() => { clearLastMatch(); navigation.navigate("Chat", { name: lastMatch.name }); }} style={{ flex: 1 }} />
+        <Button label="Say hello" onPress={() => { clearLastMatch(); navigation.navigate("Chat", { matchId: lastMatch.id, userId: lastMatch.userId, name: lastMatch.name }); }} style={{ flex: 1 }} />
       </View>
     </Card> : null}
     {error ? <Card><AccessibleText color={colors.error}>{error}</AccessibleText></Card> : null}

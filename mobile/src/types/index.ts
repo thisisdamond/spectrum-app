@@ -129,10 +129,64 @@ export type IncomingLike = {
 export type MatchSummary = {
   id: string;
   matchedAt: string;
+  lastActivityAt: string;
+  unreadCount: number;
   compatibilityScore: number | null;
   otherUser: { userId: string; profile: PublicProfile; photo: ProfilePhoto | null };
   lastMessage: { id: string; senderId: string; body: string; readAt: string | null; createdAt: string } | null;
 };
+
+export type ChatMessage = {
+  id: string;
+  clientId: string | null;
+  matchId: string;
+  senderId: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+  pending?: boolean;
+  failed?: boolean;
+};
+
+export type ConversationUpdate = {
+  messages: ChatMessage[];
+  cursor: string | null;
+  typing: { active: boolean; updatedAt: string; expiresAt: string } | null;
+  readReceipt: { through: string; at: string } | null;
+};
+
+export type NotificationSettings = {
+  newMatches: boolean;
+  newMessages: boolean;
+  newLikes: boolean;
+  messagePreviews: boolean;
+  batched: boolean;
+  pausedUntil: string | null;
+};
+
+export type SafetyPlan = {
+  trustedContactName: string | null;
+  trustedContactDetails: string | null;
+  notes: string | null;
+  updatedAt: string;
+};
+
+export type DateCheckIn = {
+  id: string;
+  matchId: string | null;
+  label: string;
+  scheduledFor: string;
+  status: "SCHEDULED" | "CHECKED_IN" | "MISSED" | "CANCELED";
+  venue: string | null;
+  note: string | null;
+  trustedContactRequested: boolean;
+  checkedInAt: string | null;
+  canceledAt: string | null;
+  missedAt: string | null;
+  createdAt: string;
+};
+
+export type BlockedUser = { id: string; userId: string; displayName: string; photo: ProfilePhoto | null; createdAt: string };
 
 export type DiscoveryAdvancedFilters = {
   minCompatibility?: number;

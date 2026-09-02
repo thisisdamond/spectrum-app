@@ -11,6 +11,10 @@ import { MatchesScreen } from "../screens/MatchesScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 import { BasicProfileSetupScreen, CommunicationSetupScreen, PhotosSetupScreen, PreferencesSetupScreen, PromptsSetupScreen, SensorySetupScreen } from "../screens/ProfileSetupScreens";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { SafetyActionsScreen } from "../screens/SafetyActionsScreen";
+import { SafetyCenterScreen } from "../screens/SafetyCenterScreen";
+import { BlockedUsersScreen } from "../screens/BlockedUsersScreen";
+import { NotificationSettingsScreen } from "../screens/NotificationSettingsScreen";
 import { TwoFactorSettingsScreen } from "../screens/TwoFactorSettingsScreen";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 import { useAppStore } from "../store/useAppStore";
@@ -27,7 +31,17 @@ export type AuthStackParams = {
   TwoFactor: undefined;
 };
 export type SetupStackParams = { Basics: undefined; Preferences: undefined; Communication: undefined; Sensory: undefined; Photos: undefined; Prompts: undefined };
-export type RootStackParams = { Main: undefined; Chat: { name: string }; DiscoveryFilters: undefined; ProfileSetup: undefined; TwoFactorSettings: undefined };
+export type RootStackParams = {
+  Main: undefined;
+  Chat: { matchId: string; userId: string; name: string };
+  SafetyActions: { matchId: string; userId: string; name: string };
+  SafetyCenter: { matchId?: string; name?: string } | undefined;
+  BlockedUsers: undefined;
+  NotificationSettings: undefined;
+  DiscoveryFilters: undefined;
+  ProfileSetup: undefined;
+  TwoFactorSettings: undefined;
+};
 type TabParams = { Discover: undefined; Likes: undefined; Matches: undefined; Profile: undefined; Settings: undefined };
 
 const Auth = createNativeStackNavigator<AuthStackParams>();
@@ -53,7 +67,7 @@ function MainTabs() {
 }
 
 function MainNavigator() {
-  return <Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} options={{ headerShown: false }} /><Root.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.name })} /><Root.Screen name="DiscoveryFilters" component={DiscoveryFiltersScreen} options={{ title: "Discovery filters" }} /><Root.Screen name="ProfileSetup" component={SetupNavigator} options={{ headerShown: false }} /><Root.Screen name="TwoFactorSettings" component={TwoFactorSettingsScreen} options={{ title: "Account security" }} /></Root.Navigator>;
+  return <Root.Navigator screenOptions={stackOptions}><Root.Screen name="Main" component={MainTabs} options={{ headerShown: false }} /><Root.Screen name="Chat" component={ChatScreen} options={({ route }) => ({ title: route.params.name })} /><Root.Screen name="SafetyActions" component={SafetyActionsScreen} options={{ title: "Safety options" }} /><Root.Screen name="SafetyCenter" component={SafetyCenterScreen} options={{ title: "Safety center" }} /><Root.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ title: "Blocked accounts" }} /><Root.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Notifications" }} /><Root.Screen name="DiscoveryFilters" component={DiscoveryFiltersScreen} options={{ title: "Discovery filters" }} /><Root.Screen name="ProfileSetup" component={SetupNavigator} options={{ headerShown: false }} /><Root.Screen name="TwoFactorSettings" component={TwoFactorSettingsScreen} options={{ title: "Account security" }} /></Root.Navigator>;
 }
 
 export function AppNavigator() {
